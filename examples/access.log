@@ -1,0 +1,5 @@
+203.0.113.10 - - [23/Sep/2026:09:15:02 +0000] "GET / HTTP/1.1" 200 1842 "-" "Mozilla/5.0"
+203.0.113.10 - - [23/Sep/2026:09:15:04 +0000] "GET /assets/app.css HTTP/1.1" 200 4821 "https://example.test/" "Mozilla/5.0"
+198.51.100.22 - - [23/Sep/2026:09:16:41 +0000] "POST /api/session HTTP/1.1" 201 392 "https://example.test/login" "curl/8.4.0"
+192.0.2.5 - - [23/Sep/2026:09:18:07 +0000] "GET /missing HTTP/1.1" 404 153 "-" "Mozilla/5.0"
+203.0.113.10 - - [23/Sep/2026:10:01:02 +0000] "GET /api/items HTTP/1.1" 500 88 "-" "Mozilla/5.0"

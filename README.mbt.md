@@ -1,51 +1,42 @@
-# moon-wit-compat
+# moon-accesslog
 
-`moon-wit-compat` compares two WIT package versions and reports public API
-changes before a component interface is released. It focuses on compatibility
-analysis, not binding generation.
+`moon-accesslog` is a dependency-free MoonBit analyzer for Nginx and Apache
+Common/Combined access logs. It parses quoted request fields correctly and
+turns a large log into a compact operational summary: requests, transferred
+bytes, status and method counts, top paths, client addresses, and UTC-hour
+traffic.
 
 ## Quick start
 
 ```bash
-moon run cmd/main -- examples/v1.wit examples/v2-breaking.wit
-moon run cmd/main -- --strict examples/v1.wit examples/v2-breaking.wit
+moon run cmd/main -- examples/access.log
+moon run cmd/main -- --top 5 examples/access.log
 ```
 
-`--strict` exits unsuccessfully when a breaking change is found, making the
-tool suitable for release checks in CI.
-
-## Compatibility policy
-
-- Removing a declaration is breaking.
-- Changing an existing function signature, type definition, import, export,
-  `use`, or world composition entry is breaking.
-- Adding a declaration is reported as additive and does not fail strict mode.
-- Package namespace or name changes are breaking.
-
-Imports and exports are treated conservatively and uniformly because a WIT
-document alone does not say which side of an interface is the release target.
-The comparison is structural over the parsed WIT subset supported by
-`moon-wit`; it does not resolve transitive `include` or `use` dependencies.
+Malformed records are counted and skipped, while valid lines still contribute
+to the report. The first release loads the selected file into memory before
+analysis; it is intended for operational log files, not unbounded streams.
 
 ## Library API
 
 ```moonbit nocheck
-let old_package = @wit.parse(old_source)
-let new_package = @wit.parse(new_source)
-let report = @compat.compare(old_package, new_package)
-println(report.to_string())
-if report.has_breaking() {
-  abort("release is not compatible")
-}
+let report = @accesslog.analyze(source)
+println(report.to_text(top=10))
 ```
+
+`parse_line` accepts Common and Combined Log Format entries and returns a
+structured record. `analyze` aggregates records without making network calls
+or depending on a server runtime.
 
 ## Development
 
 ```bash
+moon fmt --check
 moon info
-moon fmt
+moon check
 moon test
-moon run cmd/main -- examples/v1.wit examples/v2-breaking.wit
+moon run cmd/main -- examples/access.log
+moon build --target native
 ```
 
 ## License

@@ -20,5 +20,5 @@ jobs:
       - run: moon fmt --check
       - run: moon check
       - run: moon test
-      - run: moon run cmd/main -- examples/v1.wit examples/v2-breaking.wit
+      - run: moon run cmd/main -- examples/access.log
       - run: moon build --target native

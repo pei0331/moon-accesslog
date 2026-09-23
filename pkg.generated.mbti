@@ -1,11 +1,38 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "pei0331/moon-wit-compat"
+package "pei0331/moon-accesslog"
 
 // Values
+pub fn analyze(String) -> Report
+
+pub fn parse_line(String) -> AccessRecord?
 
 // Errors
 
 // Types and methods
+pub struct AccessRecord {
+  address : String
+  timestamp : String
+  http_method : String
+  path : String
+  protocol : String
+  status : Int
+  bytes : Int
+  referrer : String
+  user_agent : String
+}
+
+pub struct Report {
+  total_lines : Int
+  invalid_lines : Int
+  requests : Int
+  total_bytes : Int
+  status_counts : Map[Int, Int]
+  method_counts : Map[String, Int]
+  path_counts : Map[String, Int]
+  address_counts : Map[String, Int]
+  hourly_counts : Map[String, Int]
+}
+pub fn Report::to_text(Self, top? : Int) -> String
 
 // Type aliases
 

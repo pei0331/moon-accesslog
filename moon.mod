@@ -1,15 +1,15 @@
-name = "pei0331/moon-wit-compat"
+name = "pei0331/moon-accesslog"
 
 version = "0.1.0"
 
 readme = "README.mbt.md"
 
-repository = "https://github.com/pei0331/moon-wit-compat"
+repository = "https://github.com/pei0331/moon-accesslog"
 
 license = "Apache-2.0"
 
-keywords = [ "wit", "wasm", "compatibility", "breaking-changes", "cli" ]
+keywords = [ "nginx", "apache", "access-log", "log-analysis", "cli" ]
 
-description = "A WIT API compatibility checker for WebAssembly component interfaces"
+description = "A Common and Combined Log Format analyzer for MoonBit"
 
 preferred_target = "native"

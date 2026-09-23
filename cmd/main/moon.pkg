@@ -2,7 +2,7 @@ import {
   "moonbitlang/core/env",
   "moonbitlang/core/string",
   "moonbitlang/core/encoding/utf8",
-  "pei0331/moon-wit-compat/lib" @compat,
+  "pei0331/moon-accesslog" @accesslog,
 }
 
 pkgtype(kind: "executable")

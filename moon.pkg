@@ -1,6 +1,6 @@
 import {
   "moonbitlang/core/string",
-  "moonbitlang/core/char",
+  "moonbitlang/core/strconv",
 }
 
 import {
