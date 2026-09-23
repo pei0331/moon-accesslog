@@ -1,0 +1,12 @@
+import {
+  "moonbitlang/core/env",
+  "moonbitlang/core/string",
+  "moonbitlang/core/encoding/utf8",
+  "pei0331/moon-wit-compat/lib" @compat,
+}
+
+pkgtype(kind: "executable")
+
+options(
+  targets: { "fs_native.mbt": [ "native" ] },
+)

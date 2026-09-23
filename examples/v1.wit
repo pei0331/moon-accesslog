@@ -1,0 +1,15 @@
+package demo:ledger;
+
+interface account {
+  record user {
+    id: u64,
+    name: string,
+  }
+
+  get-user: func(id: u64) -> user;
+}
+
+world service {
+  import log: func(message: string);
+  export account;
+}

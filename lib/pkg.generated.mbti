@@ -1,0 +1,206 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "pei0331/moon-wit-compat/lib"
+
+// Values
+pub fn compare(WitPackage, WitPackage) -> Report
+
+pub fn parse(String) -> WitPackage raise WitError
+
+pub fn tokenize(String) -> Array[Token] raise WitError
+
+// Errors
+pub(all) suberror WitError {
+  At(Int, Int, String)
+}
+pub fn WitError::make(Int, Int, String) -> Self
+pub fn WitError::to_string(Self) -> String
+
+// Types and methods
+pub struct Case {
+  name : String
+  ty : WitType?
+}
+pub fn Case::to_string(Self) -> String
+
+pub struct Change {
+  severity : Severity
+  subject : String
+  detail : String
+}
+
+pub struct Field {
+  name : String
+  ty : WitType
+}
+pub fn Field::to_string(Self) -> String
+
+pub enum FuncResult {
+  Unnamed(WitType)
+  Named(Field)
+}
+pub fn FuncResult::to_string(Self) -> String
+
+pub struct FuncSig {
+  name : String
+  params : Array[Field]
+  results : Array[FuncResult]
+}
+pub fn FuncSig::to_string(Self) -> String
+
+pub struct ImpExp {
+  name : String
+  asName : String?
+  inline : Interface?
+}
+pub fn ImpExp::to_string(Self) -> String
+
+pub struct Interface {
+  name : String
+  items : Array[InterfaceItem]
+}
+pub fn Interface::to_string(Self) -> String
+
+pub enum InterfaceItem {
+  Use(UseDecl)
+  Type(TypeDef)
+  Func(FuncSig)
+}
+pub fn InterfaceItem::to_string(Self) -> String
+
+pub struct Report {
+  changes : Array[Change]
+}
+pub fn Report::has_breaking(Self) -> Bool
+pub fn Report::to_string(Self) -> String
+
+pub struct ResourceFunc {
+  kind : ResourceFuncKind
+  sig : FuncSig
+}
+
+pub enum ResourceFuncKind {
+  Constructor
+  Static
+  Method
+}
+
+pub enum Severity {
+  Compatible
+  Breaking
+}
+
+pub struct Token {
+  kind : TokenKind
+  line : Int
+  col : Int
+} derive(Eq)
+pub fn Token::to_string(Self) -> String
+
+pub enum TokenKind {
+  Ident(String)
+  Version(String)
+  LBrace
+  RBrace
+  LParen
+  RParen
+  Lt
+  Gt
+  Comma
+  Semi
+  Colon
+  Arrow
+  Eq
+  Dot
+  Slash
+  At
+  Star
+  Eof
+} derive(Eq)
+
+pub struct TypeDef {
+  name : String
+  kind : TypeDefKind
+}
+pub fn TypeDef::to_string(Self) -> String
+
+pub enum TypeDefKind {
+  Record(Array[Field])
+  Variant(Array[Case])
+  Enum(Array[String])
+  Flags(Array[String])
+  Resource(Array[ResourceFunc])
+  Alias(WitType)
+}
+
+pub struct UseDecl {
+  path : String
+  names : Array[UseName]
+}
+pub fn UseDecl::to_string(Self) -> String
+
+pub struct UseName {
+  name : String
+  asName : String?
+}
+pub fn UseName::to_string(Self) -> String
+
+pub enum WitItem {
+  Interface(Interface)
+  World(World)
+  Use(UseDecl)
+}
+pub fn WitItem::to_string(Self) -> String
+
+pub struct WitPackage {
+  ns : String
+  name : String
+  version : String?
+  items : Array[WitItem]
+}
+pub fn WitPackage::to_string(Self) -> String
+
+pub enum WitType {
+  Name(String)
+  U8
+  U16
+  U32
+  U64
+  S8
+  S16
+  S32
+  S64
+  F32
+  F64
+  TChar
+  TString
+  TBool
+  List(WitType)
+  Option(WitType)
+  Result(WitType?, WitType?)
+  Tuple(Array[WitType])
+  Own(String)
+  Borrow(String)
+  Future(WitType?)
+  Stream(WitType?)
+}
+pub fn WitType::to_string(Self) -> String
+
+pub struct World {
+  name : String
+  items : Array[WorldItem]
+}
+pub fn World::to_string(Self) -> String
+
+pub enum WorldItem {
+  Import(ImpExp)
+  Export(ImpExp)
+  ImportFunc(FuncSig)
+  ExportFunc(FuncSig)
+  Include(String, Array[UseName])
+  Use(UseDecl)
+}
+pub fn WorldItem::to_string(Self) -> String
+
+// Type aliases
+
+// Traits
