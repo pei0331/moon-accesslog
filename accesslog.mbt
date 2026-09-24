@@ -154,6 +154,24 @@ pub fn Report::to_json(self : Report) -> String {
 }
 
 ///|
+/// Render metrics as CSV rows with the columns `metric,key,value`.
+pub fn Report::to_csv(self : Report) -> String {
+  let mut out = "metric,key,value\n"
+  out = out + "summary,total_lines,\{self.total_lines}\n"
+  out = out + "summary,invalid_lines,\{self.invalid_lines}\n"
+  out = out + "summary,requests,\{self.requests}\n"
+  out = out + "summary,total_bytes,\{self.total_bytes}\n"
+  out = out + "summary,error_requests,\{self.error_requests()}\n"
+  out = out + "summary,error_rate_percent,\{self.error_rate_percent()}\n"
+  out = out + "summary,unique_paths,\{self.unique_path_count()}\n"
+  out = out + render_csv_int_counts("status", self.status_counts)
+  out = out + render_csv_string_counts("method", self.method_counts)
+  out = out + render_csv_string_counts("path", self.path_counts)
+  out = out + render_csv_string_counts("address", self.address_counts)
+  out + render_csv_string_counts("utc_hour", self.hourly_counts)
+}
+
+///|
 /// Number of valid requests with a 4xx or 5xx status code.
 pub fn Report::error_requests(self : Report) -> Int {
   let mut total = 0
@@ -349,6 +367,80 @@ fn json_escape(value : String) -> String {
       '\t' => out = out + "\\t"
       _ => out = out + ch.to_string()
     }
+  }
+  out
+}
+
+///|
+fn csv_escape(value : String) -> String {
+  let mut needs_quotes = false
+  for ch in value.to_array() {
+    if ch == ',' || ch == '"' || ch == '\n' || ch == '\r' {
+      needs_quotes = true
+    }
+  }
+  let mut escaped = ""
+  for ch in value.to_array() {
+    if ch == '"' {
+      escaped = escaped + "\"\""
+    } else {
+      escaped = escaped + ch.to_string()
+    }
+  }
+  if needs_quotes {
+    "\"" + escaped + "\""
+  } else {
+    escaped
+  }
+}
+
+///|
+fn render_csv_int_counts(metric : String, counts : Map[Int, Int]) -> String {
+  let entries : Array[(Int, Int)] = []
+  for key, value in counts {
+    entries.push((key, value))
+  }
+  entries.sort_by((a, b) => {
+    if a.0 < b.0 {
+      -1
+    } else if a.0 > b.0 {
+      1
+    } else {
+      0
+    }
+  })
+  let mut out = ""
+  for _, entry in entries {
+    out = out +
+      metric +
+      "," +
+      entry.0.to_string() +
+      "," +
+      entry.1.to_string() +
+      "\n"
+  }
+  out
+}
+
+///|
+fn render_csv_string_counts(
+  metric : String,
+  counts : Map[String, Int],
+) -> String {
+  let entries : Array[(String, Int)] = []
+  for key, value in counts {
+    entries.push((key, value))
+  }
+  entries.sort_by(fn(a, b) { a.0.compare(b.0) })
+  let mut out = ""
+  for _, entry in entries {
+    out = out +
+      metric +
+      "," +
+      csv_escape(entry.0) +
+      "," +
+      entry.1.to_string() +
+      "\n"
   }
   out
 }

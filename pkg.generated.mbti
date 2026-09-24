@@ -34,6 +34,7 @@ pub struct Report {
 }
 pub fn Report::error_rate_percent(Self) -> Int
 pub fn Report::error_requests(Self) -> Int
+pub fn Report::to_csv(Self) -> String
 pub fn Report::to_json(Self) -> String
 pub fn Report::to_text(Self, top? : Int) -> String
 pub fn Report::unique_path_count(Self) -> Int

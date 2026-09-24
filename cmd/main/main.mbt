@@ -3,6 +3,7 @@ fn main {
   let args = @env.args()
   let mut top = 10
   let mut json = false
+  let mut csv = false
   let mut path : String? = None
   let mut i = 1
   while i < args.length() {
@@ -21,10 +22,19 @@ fn main {
       }
       i += 2
     } else if args[i] == "--json" {
+      if csv {
+        fail("--json and --csv cannot be combined")
+      }
       json = true
       i += 1
+    } else if args[i] == "--csv" {
+      if json {
+        fail("--json and --csv cannot be combined")
+      }
+      csv = true
+      i += 1
     } else if args[i] == "--help" || args[i] == "-h" {
-      println("Usage: moon-accesslog [--top N] [--json] <access.log>")
+      println("Usage: moon-accesslog [--top N] [--json|--csv] <access.log>")
       return
     } else if path is None {
       path = Some(args[i])
@@ -45,11 +55,13 @@ fn main {
       let report = @accesslog.analyze(source)
       if json {
         println(report.to_json())
+      } else if csv {
+        println(report.to_csv())
       } else {
         println(report.to_text(top~))
       }
     }
-    None => fail("Usage: moon-accesslog [--top N] [--json] <access.log>")
+    None => fail("Usage: moon-accesslog [--top N] [--json|--csv] <access.log>")
   }
 }
 

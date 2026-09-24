@@ -67,3 +67,14 @@ test "render deterministic JSON with escaped keys" {
   assert_true(json.contains("\"unique_paths\":1"))
   assert_true(json.contains("\"/quote-path\":1"))
 }
+
+///|
+test "render CSV metrics with a header" {
+  let report = analyze(
+    "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /a HTTP/1.1\" 200 3",
+  )
+  let csv = report.to_csv()
+  assert_true(csv.has_prefix("metric,key,value\n"))
+  assert_true(csv.contains("summary,total_bytes,3\n"))
+  assert_true(csv.contains("path,/a,1\n"))
+}
