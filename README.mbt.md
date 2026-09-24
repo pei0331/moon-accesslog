@@ -11,6 +11,7 @@ traffic.
 ```bash
 moon run cmd/main -- examples/access.log
 moon run cmd/main -- --top 5 examples/access.log
+moon run cmd/main -- --json examples/access.log
 ```
 
 Malformed records are counted and skipped, while valid lines still contribute
@@ -28,6 +29,11 @@ println(report.to_text(top=10))
 structured record. `analyze` aggregates records without making network calls
 or depending on a server runtime.
 
+`Report::to_json()` emits deterministic JSON with totals and sorted count maps
+for status codes, methods, paths, client addresses and UTC-hour buckets. The
+CLI's `--json` flag selects the same machine-readable format for archival and
+CI pipelines; `--top` remains available for the human-readable report.
+
 ## Development
 
 ```bash
@@ -36,6 +42,7 @@ moon info
 moon check
 moon test
 moon run cmd/main -- examples/access.log
+moon run cmd/main -- --json examples/access.log
 moon build --target native
 ```
 
