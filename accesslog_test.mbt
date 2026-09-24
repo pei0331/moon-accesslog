@@ -31,6 +31,9 @@ test "aggregate status method paths bytes and hours" {
   assert_eq(report.requests, 3)
   assert_eq(report.invalid_lines, 1)
   assert_eq(report.total_bytes, 157)
+  assert_eq(report.error_requests(), 1)
+  assert_eq(report.error_rate_percent(), 33)
+  assert_eq(report.unique_path_count(), 2)
   assert_eq(report.path_counts.get("/a"), Some(2))
   assert_eq(report.status_counts.get(404), Some(1))
   assert_eq(report.hourly_counts.get("10/Oct/2000:13:00"), Some(2))
@@ -60,5 +63,7 @@ test "render deterministic JSON with escaped keys" {
   let json = report.to_json()
   assert_true(json.contains("\"requests\":1"))
   assert_true(json.contains("\"total_bytes\":3"))
+  assert_true(json.contains("\"error_requests\":0"))
+  assert_true(json.contains("\"unique_paths\":1"))
   assert_true(json.contains("\"/quote-path\":1"))
 }

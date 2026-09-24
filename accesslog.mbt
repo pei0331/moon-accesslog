@@ -119,6 +119,9 @@ pub fn Report::to_text(self : Report, top? : Int = 10) -> String {
   out = out +
     "Lines: \{self.total_lines} (valid: \{self.requests}, invalid: \{self.invalid_lines})\n"
   out = out + "Transferred bytes: \{self.total_bytes}\n"
+  out = out +
+    "Error requests: \{self.error_requests()} (\{self.error_rate_percent()}%)\n"
+  out = out + "Unique paths: \{self.unique_path_count()}\n"
   out = out + "\nStatus codes\n"
   out = out + render_int_counts(self.status_counts)
   out = out + "\nMethods\n"
@@ -135,7 +138,7 @@ pub fn Report::to_text(self : Report, top? : Int = 10) -> String {
 ///|
 /// Render the report as deterministic JSON for archival and CI pipelines.
 pub fn Report::to_json(self : Report) -> String {
-  let mut out = "{\"total_lines\":\{self.total_lines},\"invalid_lines\":\{self.invalid_lines},\"requests\":\{self.requests},\"total_bytes\":\{self.total_bytes}"
+  let mut out = "{\"total_lines\":\{self.total_lines},\"invalid_lines\":\{self.invalid_lines},\"requests\":\{self.requests},\"total_bytes\":\{self.total_bytes},\"error_requests\":\{self.error_requests()},\"error_rate_percent\":\{self.error_rate_percent()},\"unique_paths\":\{self.unique_path_count()}"
   out = out + ",\"status_counts\":" + render_json_int_counts(self.status_counts)
   out = out +
     ",\"method_counts\":" +
@@ -148,6 +151,38 @@ pub fn Report::to_json(self : Report) -> String {
     ",\"hourly_counts\":" +
     render_json_string_counts(self.hourly_counts)
   out + "}"
+}
+
+///|
+/// Number of valid requests with a 4xx or 5xx status code.
+pub fn Report::error_requests(self : Report) -> Int {
+  let mut total = 0
+  for status, count in self.status_counts {
+    if status >= 400 {
+      total += count
+    }
+  }
+  total
+}
+
+///|
+/// Error percentage rounded down to a whole number.
+pub fn Report::error_rate_percent(self : Report) -> Int {
+  if self.requests == 0 {
+    0
+  } else {
+    self.error_requests() * 100 / self.requests
+  }
+}
+
+///|
+/// Number of distinct request paths in valid records.
+pub fn Report::unique_path_count(self : Report) -> Int {
+  let mut total = 0
+  for _, _ in self.path_counts {
+    total += 1
+  }
+  total
 }
 
 ///|
