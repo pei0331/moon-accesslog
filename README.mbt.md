@@ -12,6 +12,7 @@ traffic.
 moon run cmd/main -- examples/access.log
 moon run cmd/main -- --top 5 examples/access.log
 moon run cmd/main -- --json examples/access.log
+moon run cmd/main -- --csv examples/access.log
 ```
 
 Malformed records are counted and skipped, while valid lines still contribute
@@ -33,6 +34,10 @@ or depending on a server runtime.
 for status codes, methods, paths, client addresses and UTC-hour buckets. The
 CLI's `--json` flag selects the same machine-readable format for archival and
 CI pipelines; `--top` remains available for the human-readable report.
+
+`Report::to_csv()` and the CLI's `--csv` option emit a header plus normalized
+`metric,key,value` rows. Values are escaped according to CSV rules, and the
+same stable ordering is used on every run.
 
 Reports also expose `error_requests()`, `error_rate_percent()` and
 `unique_path_count()` for health checks and dashboards. Error requests include
