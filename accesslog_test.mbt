@@ -51,3 +51,14 @@ test "common format defaults optional fields" {
     None => abort("expected record")
   }
 }
+
+///|
+test "render deterministic JSON with escaped keys" {
+  let report = analyze(
+    "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /quote-path HTTP/1.1\" 200 3",
+  )
+  let json = report.to_json()
+  assert_true(json.contains("\"requests\":1"))
+  assert_true(json.contains("\"total_bytes\":3"))
+  assert_true(json.contains("\"/quote-path\":1"))
+}

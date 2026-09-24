@@ -2,6 +2,7 @@
 fn main {
   let args = @env.args()
   let mut top = 10
+  let mut json = false
   let mut path : String? = None
   let mut i = 1
   while i < args.length() {
@@ -19,8 +20,11 @@ fn main {
         fail("--top expects a non-negative integer")
       }
       i += 2
+    } else if args[i] == "--json" {
+      json = true
+      i += 1
     } else if args[i] == "--help" || args[i] == "-h" {
-      println("Usage: moon-accesslog [--top N] <access.log>")
+      println("Usage: moon-accesslog [--top N] [--json] <access.log>")
       return
     } else if path is None {
       path = Some(args[i])
@@ -39,9 +43,13 @@ fn main {
         }
       }
       let report = @accesslog.analyze(source)
-      println(report.to_text(top~))
+      if json {
+        println(report.to_json())
+      } else {
+        println(report.to_text(top~))
+      }
     }
-    None => fail("Usage: moon-accesslog [--top N] <access.log>")
+    None => fail("Usage: moon-accesslog [--top N] [--json] <access.log>")
   }
 }
 

@@ -32,6 +32,7 @@ pub struct Report {
   address_counts : Map[String, Int]
   hourly_counts : Map[String, Int]
 }
+pub fn Report::to_json(Self) -> String
 pub fn Report::to_text(Self, top? : Int) -> String
 
 // Type aliases

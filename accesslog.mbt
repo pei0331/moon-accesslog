@@ -133,6 +133,24 @@ pub fn Report::to_text(self : Report, top? : Int = 10) -> String {
 }
 
 ///|
+/// Render the report as deterministic JSON for archival and CI pipelines.
+pub fn Report::to_json(self : Report) -> String {
+  let mut out = "{\"total_lines\":\{self.total_lines},\"invalid_lines\":\{self.invalid_lines},\"requests\":\{self.requests},\"total_bytes\":\{self.total_bytes}"
+  out = out + ",\"status_counts\":" + render_json_int_counts(self.status_counts)
+  out = out +
+    ",\"method_counts\":" +
+    render_json_string_counts(self.method_counts)
+  out = out + ",\"path_counts\":" + render_json_string_counts(self.path_counts)
+  out = out +
+    ",\"address_counts\":" +
+    render_json_string_counts(self.address_counts)
+  out = out +
+    ",\"hourly_counts\":" +
+    render_json_string_counts(self.hourly_counts)
+  out + "}"
+}
+
+///|
 fn tokenize(line : String) -> Array[String] {
   let chars = line.to_array()
   let tokens : Array[String] = []
@@ -240,4 +258,62 @@ fn render_string_counts(counts : Map[String, Int], limit : Int) -> String {
   } else {
     out
   }
+}
+
+///|
+fn render_json_int_counts(counts : Map[Int, Int]) -> String {
+  let entries : Array[(Int, Int)] = []
+  for key, value in counts {
+    entries.push((key, value))
+  }
+  entries.sort_by((a, b) => {
+    if a.0 < b.0 {
+      -1
+    } else if a.0 > b.0 {
+      1
+    } else {
+      0
+    }
+  })
+  let mut out = "{"
+  for i, entry in entries {
+    if i > 0 {
+      out = out + ","
+    }
+    out = out + "\"\{entry.0}\":\{entry.1}"
+  }
+  out + "}"
+}
+
+///|
+fn render_json_string_counts(counts : Map[String, Int]) -> String {
+  let entries : Array[(String, Int)] = []
+  for key, value in counts {
+    entries.push((key, value))
+  }
+  entries.sort_by(fn(a, b) { a.0.compare(b.0) })
+  let mut out = "{"
+  for i, entry in entries {
+    if i > 0 {
+      out = out + ","
+    }
+    out = out + "\"" + json_escape(entry.0) + "\":" + entry.1.to_string()
+  }
+  out + "}"
+}
+
+///|
+fn json_escape(value : String) -> String {
+  let mut out = ""
+  for ch in value.to_array() {
+    match ch {
+      '"' => out = out + "\\\""
+      '\\' => out = out + "\\\\"
+      '\n' => out = out + "\\n"
+      '\r' => out = out + "\\r"
+      '\t' => out = out + "\\t"
+      _ => out = out + ch.to_string()
+    }
+  }
+  out
 }
