@@ -34,6 +34,11 @@ for status codes, methods, paths, client addresses and UTC-hour buckets. The
 CLI's `--json` flag selects the same machine-readable format for archival and
 CI pipelines; `--top` remains available for the human-readable report.
 
+Reports also expose `error_requests()`, `error_rate_percent()` and
+`unique_path_count()` for health checks and dashboards. Error requests include
+both client and server failures (HTTP status 400 and above); the percentage is
+rounded down to a whole number.
+
 ## Development
 
 ```bash

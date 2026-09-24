@@ -4,6 +4,7 @@
 
 ### Added
 
+- Add error request, whole-number error rate and unique-path metrics to reports.
 - Add deterministic JSON report output through `Report::to_json()`.
 - Add the CLI `--json` flag for archive and CI workflows.
 - Add regression coverage for JSON totals and sorted path counts.
