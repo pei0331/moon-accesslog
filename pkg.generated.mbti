@@ -4,6 +4,10 @@ package "pei0331/moon-accesslog"
 // Values
 pub fn analyze(String) -> Report
 
+pub fn analyze_lines(Array[String], AnalyzeOptions) -> Report
+
+pub fn analyze_with_options(String, AnalyzeOptions) -> Report
+
 pub fn parse_line(String) -> AccessRecord?
 
 // Errors
@@ -14,6 +18,8 @@ pub struct AccessRecord {
   timestamp : String
   http_method : String
   path : String
+  route : String
+  query : String
   protocol : String
   status : Int
   bytes : Int
@@ -21,22 +27,50 @@ pub struct AccessRecord {
   user_agent : String
 }
 
+pub struct AnalyzeOptions {
+  http_method : String?
+  path_prefix : String?
+  address : String?
+  status_min : Int?
+  status_max : Int?
+}
+pub fn AnalyzeOptions::from(String?, String?, String?, Int?, Int?) -> Self
+pub fn AnalyzeOptions::new() -> Self
+
+pub struct Analyzer {
+  options : AnalyzeOptions
+  mut report : Report
+}
+pub fn Analyzer::finish(Self) -> Report
+pub fn Analyzer::new(AnalyzeOptions) -> Self
+pub fn Analyzer::push(Self, String) -> Self
+
 pub struct Report {
-  total_lines : Int
-  invalid_lines : Int
-  requests : Int
-  total_bytes : Int
+  mut total_lines : Int
+  mut invalid_lines : Int
+  mut filtered_lines : Int
+  mut requests : Int
+  mut total_bytes : Int
   status_counts : Map[Int, Int]
   method_counts : Map[String, Int]
   path_counts : Map[String, Int]
   address_counts : Map[String, Int]
   hourly_counts : Map[String, Int]
+  route_counts : Map[String, Int]
 }
+pub fn Report::client_error_requests(Self) -> Int
 pub fn Report::error_rate_percent(Self) -> Int
 pub fn Report::error_requests(Self) -> Int
+pub fn Report::server_error_requests(Self) -> Int
+pub fn Report::status_class_counts(Self) -> Map[String, Int]
+pub fn Report::success_rate_percent(Self) -> Int
+pub fn Report::success_requests(Self) -> Int
 pub fn Report::to_csv(Self) -> String
 pub fn Report::to_json(Self) -> String
 pub fn Report::to_text(Self, top? : Int) -> String
+pub fn Report::top_addresses(Self, Int) -> Array[(String, Int)]
+pub fn Report::top_paths(Self, Int) -> Array[(String, Int)]
+pub fn Report::top_routes(Self, Int) -> Array[(String, Int)]
 pub fn Report::unique_path_count(Self) -> Int
 
 // Type aliases

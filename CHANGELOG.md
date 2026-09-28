@@ -1,9 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 - Unreleased
 
 ### Added
 
+- Add composable method, route-prefix, address and status-range filters through
+  `AnalyzeOptions`, `analyze_with_options` and matching CLI flags.
+- Add the functional incremental `Analyzer` API and `analyze_lines` helper for
+  chunked or pre-split input.
+- Add query-string aware `route` fields, route aggregation, status classes,
+  success/client/server error metrics and structured Top-N APIs.
 - Add CSV report output through `Report::to_csv()` and the CLI `--csv` flag.
 - Add error request, whole-number error rate and unique-path metrics to reports.
 - Add deterministic JSON report output through `Report::to_json()`.

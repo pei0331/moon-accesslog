@@ -5,6 +5,11 @@ fn main {
   let mut json = false
   let mut csv = false
   let mut path : String? = None
+  let mut http_method : String? = None
+  let mut path_prefix : String? = None
+  let mut address : String? = None
+  let mut status_min : Int? = None
+  let mut status_max : Int? = None
   let mut i = 1
   while i < args.length() {
     if args[i] == "--top" {
@@ -33,8 +38,45 @@ fn main {
       }
       csv = true
       i += 1
+    } else if args[i] == "--method" {
+      if i + 1 >= args.length() {
+        fail("missing method after --method")
+      }
+      http_method = Some(args[i + 1])
+      i += 2
+    } else if args[i] == "--path-prefix" {
+      if i + 1 >= args.length() {
+        fail("missing prefix after --path-prefix")
+      }
+      path_prefix = Some(args[i + 1])
+      i += 2
+    } else if args[i] == "--address" {
+      if i + 1 >= args.length() {
+        fail("missing address after --address")
+      }
+      address = Some(args[i + 1])
+      i += 2
+    } else if args[i] == "--status-min" {
+      if i + 1 >= args.length() {
+        fail("missing code after --status-min")
+      }
+      status_min = Some(parse_status(args[i + 1], "--status-min"))
+      i += 2
+    } else if args[i] == "--status-max" {
+      if i + 1 >= args.length() {
+        fail("missing code after --status-max")
+      }
+      status_max = Some(parse_status(args[i + 1], "--status-max"))
+      i += 2
     } else if args[i] == "--help" || args[i] == "-h" {
-      println("Usage: moon-accesslog [--top N] [--json|--csv] <access.log>")
+      println("Usage: moon-accesslog [options] <access.log>")
+      println("  --top N                 number of rows in text output")
+      println("  --json | --csv          select machine-readable output")
+      println("  --method METHOD         keep one HTTP method")
+      println("  --path-prefix PREFIX    keep routes under a prefix")
+      println("  --address ADDRESS       keep one client address")
+      println("  --status-min CODE       inclusive lower status bound")
+      println("  --status-max CODE       inclusive upper status bound")
       return
     } else if path is None {
       path = Some(args[i])
@@ -52,7 +94,10 @@ fn main {
           ""
         }
       }
-      let report = @accesslog.analyze(source)
+      let options = @accesslog.AnalyzeOptions::from(
+        http_method, path_prefix, address, status_min, status_max,
+      )
+      let report = @accesslog.analyze_with_options(source, options)
       if json {
         println(report.to_json())
       } else if csv {
@@ -61,7 +106,7 @@ fn main {
         println(report.to_text(top~))
       }
     }
-    None => fail("Usage: moon-accesslog [--top N] [--json|--csv] <access.log>")
+    None => fail("Usage: moon-accesslog [options] <access.log>")
   }
 }
 
@@ -69,4 +114,14 @@ fn main {
 fn fail(message : String) -> Unit {
   println("error: \{message}")
   abort("moon-accesslog: \{message}")
+}
+
+///|
+fn parse_status(value : String, flag : String) -> Int {
+  @string.parse_int(value) catch {
+    _ => {
+      fail("\{flag} expects an integer status code")
+      0
+    }
+  }
 }

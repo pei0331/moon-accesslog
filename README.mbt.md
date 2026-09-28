@@ -13,6 +13,8 @@ moon run cmd/main -- examples/access.log
 moon run cmd/main -- --top 5 examples/access.log
 moon run cmd/main -- --json examples/access.log
 moon run cmd/main -- --csv examples/access.log
+moon run cmd/main -- --method GET --path-prefix /api examples/access.log
+moon run cmd/main -- --status-min 400 --status-max 599 --json examples/access.log
 ```
 
 Malformed records are counted and skipped, while valid lines still contribute
@@ -44,6 +46,18 @@ Reports also expose `error_requests()`, `error_rate_percent()` and
 both client and server failures (HTTP status 400 and above); the percentage is
 rounded down to a whole number.
 
+Filtering is available without changing the source data. The CLI accepts
+`--method`, `--path-prefix`, `--address`, `--status-min` and `--status-max`;
+filtered valid records are reported separately as `filtered_lines`. The library
+equivalent is `AnalyzeOptions::from(...)` plus `analyze_with_options(...)`.
+
+Every record exposes both its original request target (`path`) and the route
+with the query string removed (`route`). Reports include route counts, HTTP
+status-class counts, success/client-error/server-error metrics, and structured
+`top_paths`, `top_routes` and `top_addresses` results. `Analyzer::push` and
+`analyze_lines` support incremental or pre-split input for callers that do not
+want to assemble one large source string.
+
 ## Development
 
 ```bash
@@ -53,8 +67,13 @@ moon check
 moon test
 moon run cmd/main -- examples/access.log
 moon run cmd/main -- --json examples/access.log
+moon run cmd/main -- --status-min 400 examples/access.log
 moon build --target native
 ```
+
+The test suite covers malformed records, quoted fields, query/route handling,
+filter accounting, deterministic output ordering, incremental analysis and
+status health metrics.
 
 ## License
 

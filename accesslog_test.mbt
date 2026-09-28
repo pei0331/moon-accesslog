@@ -78,3 +78,92 @@ test "render CSV metrics with a header" {
   assert_true(csv.contains("summary,total_bytes,3\n"))
   assert_true(csv.contains("path,/a,1\n"))
 }
+
+///|
+test "split request query from route and count both dimensions" {
+  let record = parse_line(
+    "192.0.2.9 - - [10/Oct/2000:13:55:36 +0000] \"GET /search?q=moon&sort=new HTTP/1.1\" 200 12",
+  )
+  match record {
+    Some(value) => {
+      assert_eq(value.path, "/search?q=moon&sort=new")
+      assert_eq(value.route, "/search")
+      assert_eq(value.query, "q=moon&sort=new")
+    }
+    None => abort("expected record")
+  }
+  let report = analyze(
+    "192.0.2.9 - - [10/Oct/2000:13:55:36 +0000] \"GET /search?q=moon HTTP/1.1\" 200 12\n192.0.2.9 - - [10/Oct/2000:13:56:36 +0000] \"GET /search?q=bit HTTP/1.1\" 200 8",
+  )
+  assert_eq(report.path_counts.get("/search?q=moon"), Some(1))
+  assert_eq(report.route_counts.get("/search"), Some(2))
+}
+
+///|
+test "filter options count excluded valid records separately" {
+  let source = "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /api/a HTTP/1.1\" 200 10\n127.0.0.2 - - [10/Oct/2000:13:56:36 +0000] \"POST /api/b HTTP/1.1\" 201 20\n127.0.0.1 - - [10/Oct/2000:13:57:36 +0000] \"GET /health HTTP/1.1\" 503 4\nbad line"
+  let options = AnalyzeOptions::from(
+    Some("GET"),
+    Some("/api"),
+    Some("127.0.0.1"),
+    Some(200),
+    Some(299),
+  )
+  let report = analyze_with_options(source, options)
+  assert_eq(report.total_lines, 4)
+  assert_eq(report.invalid_lines, 1)
+  assert_eq(report.filtered_lines, 2)
+  assert_eq(report.requests, 1)
+  assert_eq(report.total_bytes, 10)
+}
+
+///|
+test "incremental analyzer matches batch analysis" {
+  let lines : Array[String] = [
+    "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /a HTTP/1.1\" 200 10", "127.0.0.2 - - [10/Oct/2000:14:01:36 +0000] \"POST /b HTTP/1.1\" 500 20",
+    "not valid",
+  ]
+  let options = AnalyzeOptions::new()
+  let incremental = Analyzer::new(options)
+    .push(lines[0])
+    .push(lines[1])
+    .push(lines[2])
+    .finish()
+  let batch = analyze_lines(lines, AnalyzeOptions::new())
+  assert_eq(incremental.requests, batch.requests)
+  assert_eq(incremental.invalid_lines, batch.invalid_lines)
+  assert_eq(incremental.total_bytes, batch.total_bytes)
+  assert_eq(incremental.status_counts.get(500), Some(1))
+}
+
+///|
+test "status metrics and top results are deterministic" {
+  let report = analyze(
+    "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /z HTTP/1.1\" 200 1\n127.0.0.1 - - [10/Oct/2000:13:56:36 +0000] \"GET /a HTTP/1.1\" 404 2\n127.0.0.2 - - [10/Oct/2000:13:57:36 +0000] \"GET /a HTTP/1.1\" 503 3\n127.0.0.2 - - [10/Oct/2000:13:58:36 +0000] \"GET /z HTTP/1.1\" 301 4",
+  )
+  assert_eq(report.success_requests(), 2)
+  assert_eq(report.client_error_requests(), 1)
+  assert_eq(report.server_error_requests(), 1)
+  assert_eq(report.success_rate_percent(), 50)
+  assert_eq(report.status_class_counts().get("5xx"), Some(1))
+  let top = report.top_paths(2)
+  assert_eq(top[0], ("/a", 2))
+  assert_eq(top[1], ("/z", 2))
+  let routes = report.top_routes(1)
+  assert_eq(routes[0], ("/a", 2))
+}
+
+///|
+test "machine outputs include filtering and health metrics" {
+  let report = analyze(
+    "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /a HTTP/1.1\" 200 3",
+  )
+  assert_true(report.to_json().contains("\"filtered_lines\":0"))
+  assert_true(report.to_json().contains("\"success_rate_percent\":100"))
+  assert_true(report.to_json().contains("\"success_requests\":1"))
+  assert_true(report.to_json().contains("\"route_counts\""))
+  assert_true(report.to_json().contains("\"status_class_counts\":{\"2xx\":1}"))
+  assert_true(report.to_csv().contains("summary,success_rate_percent,100\n"))
+  assert_true(report.to_csv().contains("status_class,2xx,1\n"))
+  assert_true(report.to_text().contains("Top routes (query excluded)"))
+}

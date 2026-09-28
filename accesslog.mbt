@@ -5,6 +5,8 @@ pub struct AccessRecord {
   timestamp : String
   http_method : String
   path : String
+  route : String
+  query : String
   protocol : String
   status : Int
   bytes : Int
@@ -15,15 +17,17 @@ pub struct AccessRecord {
 ///|
 /// Aggregate report for valid and malformed log lines.
 pub struct Report {
-  total_lines : Int
-  invalid_lines : Int
-  requests : Int
-  total_bytes : Int
+  mut total_lines : Int
+  mut invalid_lines : Int
+  mut filtered_lines : Int
+  mut requests : Int
+  mut total_bytes : Int
   status_counts : Map[Int, Int]
   method_counts : Map[String, Int]
   path_counts : Map[String, Int]
   address_counts : Map[String, Int]
   hourly_counts : Map[String, Int]
+  route_counts : Map[String, Int]
 }
 
 ///|
@@ -52,11 +56,15 @@ pub fn parse_line(line : String) -> AccessRecord? {
   }
   let referrer = if tokens.length() > 7 { tokens[7] } else { "-" }
   let user_agent = if tokens.length() > 8 { tokens[8] } else { "-" }
+  let target = parts[1].to_owned()
+  let (route, query) = split_query(target)
   Some(AccessRecord::{
     address: tokens[0],
     timestamp,
     http_method: parts[0].to_owned(),
-    path: parts[1].to_owned(),
+    path: target,
+    route,
+    query,
     protocol: parts[2].to_owned(),
     status,
     bytes: byte_count,
@@ -68,47 +76,7 @@ pub fn parse_line(line : String) -> AccessRecord? {
 ///|
 /// Analyze newline-separated Common or Combined Log Format input.
 pub fn analyze(source : String) -> Report {
-  let status_counts : Map[Int, Int] = Map([])
-  let method_counts : Map[String, Int] = Map([])
-  let path_counts : Map[String, Int] = Map([])
-  let address_counts : Map[String, Int] = Map([])
-  let hourly_counts : Map[String, Int] = Map([])
-  let mut total_lines = 0
-  let mut invalid_lines = 0
-  let mut requests = 0
-  let mut total_bytes = 0
-  for line in source.split("\n") {
-    let trimmed = line.trim().to_owned()
-    if trimmed != "" {
-      total_lines += 1
-      match parse_line(trimmed) {
-        Some(record) => {
-          requests += 1
-          total_bytes += record.bytes
-          increment(status_counts, record.status)
-          increment(method_counts, record.http_method)
-          increment(path_counts, record.path)
-          increment(address_counts, record.address)
-          let hour = hour_bucket(record.timestamp)
-          if hour != "" {
-            increment(hourly_counts, hour)
-          }
-        }
-        None => invalid_lines += 1
-      }
-    }
-  }
-  Report::{
-    total_lines,
-    invalid_lines,
-    requests,
-    total_bytes,
-    status_counts,
-    method_counts,
-    path_counts,
-    address_counts,
-    hourly_counts,
-  }
+  analyze_with_options(source, AnalyzeOptions::new())
 }
 
 ///|
@@ -117,10 +85,14 @@ pub fn Report::to_text(self : Report, top? : Int = 10) -> String {
   let limit = if top < 0 { 0 } else { top }
   let mut out = "Access log summary\n"
   out = out +
-    "Lines: \{self.total_lines} (valid: \{self.requests}, invalid: \{self.invalid_lines})\n"
+    "Lines: \{self.total_lines} (valid: \{self.requests}, invalid: \{self.invalid_lines}, filtered: \{self.filtered_lines})\n"
   out = out + "Transferred bytes: \{self.total_bytes}\n"
   out = out +
     "Error requests: \{self.error_requests()} (\{self.error_rate_percent()}%)\n"
+  out = out +
+    "Success requests: \{self.success_requests()} (\{self.success_rate_percent()}%)\n"
+  out = out + "Client errors (4xx): \{self.client_error_requests()}\n"
+  out = out + "Server errors (5xx): \{self.server_error_requests()}\n"
   out = out + "Unique paths: \{self.unique_path_count()}\n"
   out = out + "\nStatus codes\n"
   out = out + render_int_counts(self.status_counts)
@@ -128,6 +100,8 @@ pub fn Report::to_text(self : Report, top? : Int = 10) -> String {
   out = out + render_string_counts(self.method_counts, limit)
   out = out + "\nTop paths\n"
   out = out + render_string_counts(self.path_counts, limit)
+  out = out + "\nTop routes (query excluded)\n"
+  out = out + render_string_counts(self.route_counts, limit)
   out = out + "\nTop client addresses\n"
   out = out + render_string_counts(self.address_counts, limit)
   out = out + "\nRequests by UTC hour\n"
@@ -138,12 +112,18 @@ pub fn Report::to_text(self : Report, top? : Int = 10) -> String {
 ///|
 /// Render the report as deterministic JSON for archival and CI pipelines.
 pub fn Report::to_json(self : Report) -> String {
-  let mut out = "{\"total_lines\":\{self.total_lines},\"invalid_lines\":\{self.invalid_lines},\"requests\":\{self.requests},\"total_bytes\":\{self.total_bytes},\"error_requests\":\{self.error_requests()},\"error_rate_percent\":\{self.error_rate_percent()},\"unique_paths\":\{self.unique_path_count()}"
+  let mut out = "{\"total_lines\":\{self.total_lines},\"invalid_lines\":\{self.invalid_lines},\"filtered_lines\":\{self.filtered_lines},\"requests\":\{self.requests},\"total_bytes\":\{self.total_bytes},\"error_requests\":\{self.error_requests()},\"error_rate_percent\":\{self.error_rate_percent()},\"success_requests\":\{self.success_requests()},\"success_rate_percent\":\{self.success_rate_percent()},\"client_error_requests\":\{self.client_error_requests()},\"server_error_requests\":\{self.server_error_requests()},\"unique_paths\":\{self.unique_path_count()}"
   out = out + ",\"status_counts\":" + render_json_int_counts(self.status_counts)
   out = out +
     ",\"method_counts\":" +
     render_json_string_counts(self.method_counts)
   out = out + ",\"path_counts\":" + render_json_string_counts(self.path_counts)
+  out = out +
+    ",\"route_counts\":" +
+    render_json_string_counts(self.route_counts)
+  out = out +
+    ",\"status_class_counts\":" +
+    render_json_string_counts(self.status_class_counts())
   out = out +
     ",\"address_counts\":" +
     render_json_string_counts(self.address_counts)
@@ -159,14 +139,22 @@ pub fn Report::to_csv(self : Report) -> String {
   let mut out = "metric,key,value\n"
   out = out + "summary,total_lines,\{self.total_lines}\n"
   out = out + "summary,invalid_lines,\{self.invalid_lines}\n"
+  out = out + "summary,filtered_lines,\{self.filtered_lines}\n"
   out = out + "summary,requests,\{self.requests}\n"
   out = out + "summary,total_bytes,\{self.total_bytes}\n"
   out = out + "summary,error_requests,\{self.error_requests()}\n"
   out = out + "summary,error_rate_percent,\{self.error_rate_percent()}\n"
+  out = out + "summary,success_requests,\{self.success_requests()}\n"
+  out = out + "summary,success_rate_percent,\{self.success_rate_percent()}\n"
+  out = out + "summary,client_error_requests,\{self.client_error_requests()}\n"
+  out = out + "summary,server_error_requests,\{self.server_error_requests()}\n"
   out = out + "summary,unique_paths,\{self.unique_path_count()}\n"
   out = out + render_csv_int_counts("status", self.status_counts)
+  out = out +
+    render_csv_string_counts("status_class", self.status_class_counts())
   out = out + render_csv_string_counts("method", self.method_counts)
   out = out + render_csv_string_counts("path", self.path_counts)
+  out = out + render_csv_string_counts("route", self.route_counts)
   out = out + render_csv_string_counts("address", self.address_counts)
   out + render_csv_string_counts("utc_hour", self.hourly_counts)
 }
@@ -250,6 +238,21 @@ fn hour_bucket(timestamp : String) -> String {
   let day = String::from_array(chars[0:colon])
   let hour = String::from_array(chars[colon + 1:colon + 3])
   "\{day}:\{hour}:00"
+}
+
+///|
+/// Split a request target into its route and query components.
+fn split_query(target : String) -> (String, String) {
+  let chars = target.to_array()
+  let mut index = 0
+  while index < chars.length() && chars[index] != '?' {
+    index += 1
+  }
+  if index == chars.length() {
+    (target, "")
+  } else {
+    (String::from_array(chars[0:index]), String::from_array(chars[index + 1:]))
+  }
 }
 
 ///|
