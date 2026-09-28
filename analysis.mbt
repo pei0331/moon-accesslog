@@ -204,6 +204,54 @@ pub fn Report::success_rate_percent(self : Report) -> Int {
 }
 
 ///|
+/// Return whether the report is within an inclusive error-rate budget.
+pub fn Report::is_healthy(self : Report, max_error_rate_percent : Int) -> Bool {
+  self.error_rate_percent() <= max_error_rate_percent
+}
+
+///|
+/// Combine two reports produced with the same analysis options.
+pub fn Report::merge(self : Report, other : Report) -> Report {
+  self.total_lines += other.total_lines
+  self.invalid_lines += other.invalid_lines
+  self.filtered_lines += other.filtered_lines
+  self.requests += other.requests
+  self.total_bytes += other.total_bytes
+  merge_int_counts(self.status_counts, other.status_counts)
+  merge_string_counts(self.method_counts, other.method_counts)
+  merge_string_counts(self.path_counts, other.path_counts)
+  merge_string_counts(self.route_counts, other.route_counts)
+  merge_string_counts(self.address_counts, other.address_counts)
+  merge_string_counts(self.hourly_counts, other.hourly_counts)
+  self
+}
+
+///|
+fn merge_int_counts(target : Map[Int, Int], source : Map[Int, Int]) -> Unit {
+  for key, value in source {
+    let current = match target.get(key) {
+      Some(existing) => existing
+      None => 0
+    }
+    target[key] = current + value
+  }
+}
+
+///|
+fn merge_string_counts(
+  target : Map[String, Int],
+  source : Map[String, Int],
+) -> Unit {
+  for key, value in source {
+    let current = match target.get(key) {
+      Some(existing) => existing
+      None => 0
+    }
+    target[key] = current + value
+  }
+}
+
+///|
 /// Return counts grouped into HTTP status classes such as `2xx` and `5xx`.
 pub fn Report::status_class_counts(self : Report) -> Map[String, Int] {
   let result : Map[String, Int] = Map([])

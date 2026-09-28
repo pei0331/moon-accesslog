@@ -22,4 +22,5 @@ jobs:
       - run: moon test
       - run: moon run cmd/main -- examples/access.log
       - run: moon run cmd/main -- --status-min 400 --json examples/access.log
+      - run: moon run cmd/main -- --max-error-rate 100 examples/access.log
       - run: moon build --target native

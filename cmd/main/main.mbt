@@ -10,6 +10,7 @@ fn main {
   let mut address : String? = None
   let mut status_min : Int? = None
   let mut status_max : Int? = None
+  let mut max_error_rate : Int? = None
   let mut i = 1
   while i < args.length() {
     if args[i] == "--top" {
@@ -68,6 +69,16 @@ fn main {
       }
       status_max = Some(parse_status(args[i + 1], "--status-max"))
       i += 2
+    } else if args[i] == "--max-error-rate" {
+      if i + 1 >= args.length() {
+        fail("missing percentage after --max-error-rate")
+      }
+      let value = parse_status(args[i + 1], "--max-error-rate")
+      if value < 0 || value > 100 {
+        fail("--max-error-rate expects a percentage from 0 to 100")
+      }
+      max_error_rate = Some(value)
+      i += 2
     } else if args[i] == "--help" || args[i] == "-h" {
       println("Usage: moon-accesslog [options] <access.log>")
       println("  --top N                 number of rows in text output")
@@ -77,6 +88,7 @@ fn main {
       println("  --address ADDRESS       keep one client address")
       println("  --status-min CODE       inclusive lower status bound")
       println("  --status-max CODE       inclusive upper status bound")
+      println("  --max-error-rate N      fail when error percentage exceeds N")
       return
     } else if path is None {
       path = Some(args[i])
@@ -104,6 +116,15 @@ fn main {
         println(report.to_csv())
       } else {
         println(report.to_text(top~))
+      }
+      match max_error_rate {
+        Some(limit) =>
+          if !report.is_healthy(limit) {
+            fail(
+              "error rate \{report.error_rate_percent()}% exceeds limit \{limit}%",
+            )
+          }
+        None => ()
       }
     }
     None => fail("Usage: moon-accesslog [options] <access.log>")

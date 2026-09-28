@@ -15,6 +15,7 @@ moon run cmd/main -- --json examples/access.log
 moon run cmd/main -- --csv examples/access.log
 moon run cmd/main -- --method GET --path-prefix /api examples/access.log
 moon run cmd/main -- --status-min 400 --status-max 599 --json examples/access.log
+moon run cmd/main -- --max-error-rate 5 examples/access.log
 ```
 
 Malformed records are counted and skipped, while valid lines still contribute
@@ -45,6 +46,9 @@ Reports also expose `error_requests()`, `error_rate_percent()` and
 `unique_path_count()` for health checks and dashboards. Error requests include
 both client and server failures (HTTP status 400 and above); the percentage is
 rounded down to a whole number.
+`Report::is_healthy(max_error_rate_percent)` provides the same inclusive budget
+check for library callers. The CLI's `--max-error-rate N` exits with an error
+when the analyzed report exceeds that budget, making it suitable for CI gates.
 
 Filtering is available without changing the source data. The CLI accepts
 `--method`, `--path-prefix`, `--address`, `--status-min` and `--status-max`;

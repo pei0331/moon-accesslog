@@ -167,3 +167,60 @@ test "machine outputs include filtering and health metrics" {
   assert_true(report.to_csv().contains("status_class,2xx,1\n"))
   assert_true(report.to_text().contains("Top routes (query excluded)"))
 }
+
+///|
+test "parser accepts repeated request whitespace" {
+  let record = parse_line(
+    "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET   /spaced   HTTP/1.1\" 200 1",
+  )
+  match record {
+    Some(value) => {
+      assert_eq(value.http_method, "GET")
+      assert_eq(value.path, "/spaced")
+      assert_eq(value.protocol, "HTTP/1.1")
+    }
+    None => abort("expected repeated whitespace to parse")
+  }
+}
+
+///|
+test "parser rejects unterminated fields" {
+  assert_true(
+    parse_line(
+      "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /broken HTTP/1.1 200 1",
+    )
+    is None,
+  )
+  assert_true(
+    parse_line(
+      "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000 \"GET /broken HTTP/1.1\" 200 1",
+    )
+    is None,
+  )
+}
+
+///|
+test "reports merge without losing counters" {
+  let first = analyze(
+    "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /a HTTP/1.1\" 200 10\nbad",
+  )
+  let second = analyze(
+    "127.0.0.2 - - [10/Oct/2000:14:01:36 +0000] \"POST /b HTTP/1.1\" 500 20",
+  )
+  let merged = first.merge(second)
+  assert_eq(merged.total_lines, 3)
+  assert_eq(merged.invalid_lines, 1)
+  assert_eq(merged.requests, 2)
+  assert_eq(merged.total_bytes, 30)
+  assert_eq(merged.status_counts.get(200), Some(1))
+  assert_eq(merged.status_counts.get(500), Some(1))
+}
+
+///|
+test "health budget uses inclusive error percentage" {
+  let report = analyze(
+    "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /a HTTP/1.1\" 200 1\n127.0.0.1 - - [10/Oct/2000:13:56:36 +0000] \"GET /b HTTP/1.1\" 500 1",
+  )
+  assert_true(report.is_healthy(50))
+  assert_true(!report.is_healthy(49))
+}

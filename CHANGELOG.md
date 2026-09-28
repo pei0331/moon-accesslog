@@ -4,6 +4,9 @@
 
 ### Added
 
+- Add strict delimiter validation and whitespace-tolerant request parsing.
+- Add `Report::merge`, `Report::is_healthy` and CLI `--max-error-rate` for
+  parallel aggregation and CI quality gates.
 - Add composable method, route-prefix, address and status-range filters through
   `AnalyzeOptions`, `analyze_with_options` and matching CLI flags.
 - Add the functional incremental `Analyzer` API and `analyze_lines` helper for

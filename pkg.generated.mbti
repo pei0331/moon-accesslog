@@ -61,6 +61,8 @@ pub struct Report {
 pub fn Report::client_error_requests(Self) -> Int
 pub fn Report::error_rate_percent(Self) -> Int
 pub fn Report::error_requests(Self) -> Int
+pub fn Report::is_healthy(Self, Int) -> Bool
+pub fn Report::merge(Self, Self) -> Self
 pub fn Report::server_error_requests(Self) -> Int
 pub fn Report::status_class_counts(Self) -> Map[String, Int]
 pub fn Report::success_rate_percent(Self) -> Int

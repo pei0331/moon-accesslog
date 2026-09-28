@@ -33,6 +33,9 @@ pub struct Report {
 ///|
 /// Parse one Common or Combined Log Format record.
 pub fn parse_line(line : String) -> AccessRecord? {
+  if !balanced_delimiters(line) {
+    return None
+  }
   let tokens = tokenize(line)
   if tokens.length() < 7 {
     return None
@@ -42,7 +45,7 @@ pub fn parse_line(line : String) -> AccessRecord? {
     return None
   }
   let request = tokens[4]
-  let parts = request.split(" ").to_array()
+  let parts = split_request(request)
   if parts.length() < 3 {
     return None
   }
@@ -56,16 +59,16 @@ pub fn parse_line(line : String) -> AccessRecord? {
   }
   let referrer = if tokens.length() > 7 { tokens[7] } else { "-" }
   let user_agent = if tokens.length() > 8 { tokens[8] } else { "-" }
-  let target = parts[1].to_owned()
+  let target = parts[1]
   let (route, query) = split_query(target)
   Some(AccessRecord::{
     address: tokens[0],
     timestamp,
-    http_method: parts[0].to_owned(),
+    http_method: parts[0],
     path: target,
     route,
     query,
-    protocol: parts[2].to_owned(),
+    protocol: parts[2],
     status,
     bytes: byte_count,
     referrer,
@@ -207,7 +210,11 @@ fn tokenize(line : String) -> Array[String] {
         i += 1
         let start = i
         while i < chars.length() && chars[i] != close {
-          i += 1
+          if chars[i] == '\\' && i + 1 < chars.length() {
+            i += 2
+          } else {
+            i += 1
+          }
         }
         tokens.push(String::from_array(chars[start:i]))
         if i < chars.length() {
@@ -223,6 +230,60 @@ fn tokenize(line : String) -> Array[String] {
     }
   }
   tokens
+}
+
+///|
+/// Split a quoted request line while tolerating repeated whitespace.
+fn split_request(request : String) -> Array[String] {
+  let chars = request.to_array()
+  let parts : Array[String] = []
+  let mut start = 0
+  let mut i = 0
+  while i < chars.length() {
+    while i < chars.length() && chars[i].is_ascii_whitespace() {
+      i += 1
+    }
+    start = i
+    while i < chars.length() && !chars[i].is_ascii_whitespace() {
+      i += 1
+    }
+    if start < i {
+      parts.push(String::from_array(chars[start:i]))
+    }
+  }
+  parts
+}
+
+///|
+/// Reject records with an unterminated quoted or bracketed field.
+fn balanced_delimiters(line : String) -> Bool {
+  let chars = line.to_array()
+  let mut quote_open = false
+  let mut bracket_open = false
+  let mut i = 0
+  while i < chars.length() {
+    if chars[i] == '\\' && i + 1 < chars.length() {
+      i += 2
+    } else if chars[i] == '"' {
+      quote_open = !quote_open
+      i += 1
+    } else if !quote_open && chars[i] == '[' {
+      if bracket_open {
+        return false
+      }
+      bracket_open = true
+      i += 1
+    } else if !quote_open && chars[i] == ']' {
+      if !bracket_open {
+        return false
+      }
+      bracket_open = false
+      i += 1
+    } else {
+      i += 1
+    }
+  }
+  !quote_open && !bracket_open
 }
 
 ///|
