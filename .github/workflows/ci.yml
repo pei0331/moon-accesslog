@@ -14,14 +14,27 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install MoonBit
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh -o install.sh
-          bash install.sh
+          set -euxo pipefail
+          curl --fail --location --retry 5 --retry-delay 2 --retry-all-errors \
+            https://cli.moonbitlang.com/install/unix.sh -o install.sh
+          bash ./install.sh
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
-      - run: moon fmt --check
-      - run: moon check
-      - run: moon test
-      - run: moon run cmd/main -- examples/access.log
-      - run: moon run cmd/main -- --status-min 400 --json examples/access.log
-      - run: moon run cmd/main -- --max-error-rate 100 examples/access.log
-      - run: moon run cmd/main -- --hour-prefix 23/Sep/2026:09 --json examples/access.log
-      - run: moon build --target native
+          export PATH="$HOME/.moon/bin:$PATH"
+          command -v moon
+          moon version
+      - name: Check formatting
+        run: moon fmt --check
+      - name: Type check
+        run: moon check
+      - name: Run unit tests
+        run: moon test
+      - name: Run text report
+        run: moon run cmd/main -- examples/access.log
+      - name: Run JSON error filter
+        run: moon run cmd/main -- --status-min 400 --json examples/access.log
+      - name: Run health gate
+        run: moon run cmd/main -- --max-error-rate 100 examples/access.log
+      - name: Run UTC hour filter
+        run: moon run cmd/main -- --hour-prefix 23/Sep/2026:09 --json examples/access.log
+      - name: Build native binary
+        run: moon build --target native
