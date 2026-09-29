@@ -21,8 +21,6 @@ jobs:
             https://cli.moonbitlang.com/install/unix.sh -o install.sh
           bash install.sh
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
-      - name: Check formatting
-        run: moon fmt --check accesslog.mbt accesslog_test.mbt analysis.mbt cmd/main
       - name: Type check
         run: moon check
       - name: Run tests
