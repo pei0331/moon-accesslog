@@ -33,9 +33,11 @@ pub struct AnalyzeOptions {
   address : String?
   status_min : Int?
   status_max : Int?
+  hour_prefix : String?
 }
 pub fn AnalyzeOptions::from(String?, String?, String?, Int?, Int?) -> Self
 pub fn AnalyzeOptions::new() -> Self
+pub fn AnalyzeOptions::with_hour_prefix(Self, String?) -> Self
 
 pub struct Analyzer {
   options : AnalyzeOptions

@@ -1,12 +1,14 @@
 # Changelog
 
-## 0.2.0 - Unreleased
+## 0.3.0 - Unreleased
 
 ### Added
 
 - Add strict delimiter validation and whitespace-tolerant request parsing.
 - Add `Report::merge`, `Report::is_healthy` and CLI `--max-error-rate` for
   parallel aggregation and CI quality gates.
+- Add UTC hour-prefix filtering and reject invalid protocol, status and byte
+  fields before aggregation.
 - Add composable method, route-prefix, address and status-range filters through
   `AnalyzeOptions`, `analyze_with_options` and matching CLI flags.
 - Add the functional incremental `Analyzer` API and `analyze_lines` helper for

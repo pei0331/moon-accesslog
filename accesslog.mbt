@@ -49,11 +49,19 @@ pub fn parse_line(line : String) -> AccessRecord? {
   if parts.length() < 3 {
     return None
   }
+  if parts[0] == "" || !parts[2].has_prefix("HTTP/") {
+    return None
+  }
   let status = @string.parse_int(tokens[5]) catch { _ => return None }
+  if status < 100 || status > 599 {
+    return None
+  }
   let byte_count = if tokens.length() > 6 && tokens[6] != "-" {
-    @string.parse_int(tokens[6]) catch {
-      _ => return None
+    let parsed = @string.parse_int(tokens[6]) catch { _ => return None }
+    if parsed < 0 {
+      return None
     }
+    parsed
   } else {
     0
   }

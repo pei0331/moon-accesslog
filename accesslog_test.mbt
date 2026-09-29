@@ -224,3 +224,35 @@ test "health budget uses inclusive error percentage" {
   assert_true(report.is_healthy(50))
   assert_true(!report.is_healthy(49))
 }
+
+///|
+test "hour prefix filter keeps matching UTC buckets" {
+  let source = "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /a HTTP/1.1\" 200 1\n127.0.0.1 - - [10/Oct/2000:14:01:36 +0000] \"GET /b HTTP/1.1\" 200 2"
+  let options = AnalyzeOptions::new().with_hour_prefix(Some("10/Oct/2000:13"))
+  let report = analyze_with_options(source, options)
+  assert_eq(report.requests, 1)
+  assert_eq(report.filtered_lines, 1)
+  assert_eq(report.path_counts.get("/a"), Some(1))
+}
+
+///|
+test "reject invalid status bytes and protocol" {
+  assert_true(
+    parse_line(
+      "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /a FTP/1.0\" 200 1",
+    )
+    is None,
+  )
+  assert_true(
+    parse_line(
+      "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /a HTTP/1.1\" 99 1",
+    )
+    is None,
+  )
+  assert_true(
+    parse_line(
+      "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /a HTTP/1.1\" 200 -1",
+    )
+    is None,
+  )
+}

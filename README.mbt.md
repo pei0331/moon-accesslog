@@ -16,6 +16,7 @@ moon run cmd/main -- --csv examples/access.log
 moon run cmd/main -- --method GET --path-prefix /api examples/access.log
 moon run cmd/main -- --status-min 400 --status-max 599 --json examples/access.log
 moon run cmd/main -- --max-error-rate 5 examples/access.log
+moon run cmd/main -- --hour-prefix 23/Sep/2026:09 examples/access.log
 ```
 
 Malformed records are counted and skipped, while valid lines still contribute
@@ -27,6 +28,18 @@ analysis; it is intended for operational log files, not unbounded streams.
 ```moonbit nocheck
 let report = @accesslog.analyze(source)
 println(report.to_text(top=10))
+```
+
+For a filtered library report:
+
+```moonbit nocheck
+///|
+let options = @accesslog.AnalyzeOptions::new().with_hour_prefix(
+  Some("23/Sep/2026:09"),
+)
+
+///|
+let report = @accesslog.analyze_with_options(source, options)
 ```
 
 `parse_line` accepts Common and Combined Log Format entries and returns a
@@ -49,6 +62,10 @@ rounded down to a whole number.
 `Report::is_healthy(max_error_rate_percent)` provides the same inclusive budget
 check for library callers. The CLI's `--max-error-rate N` exits with an error
 when the analyzed report exceeds that budget, making it suitable for CI gates.
+
+`AnalyzeOptions::with_hour_prefix(...)` and `--hour-prefix PREFIX` select a UTC
+hour or day prefix using the native access-log timestamp format, which makes
+repeatable time-window checks possible without locale or timezone dependencies.
 
 Filtering is available without changing the source data. The CLI accepts
 `--method`, `--path-prefix`, `--address`, `--status-min` and `--status-max`;
@@ -77,7 +94,7 @@ moon build --target native
 
 The test suite covers malformed records, quoted fields, query/route handling,
 filter accounting, deterministic output ordering, incremental analysis and
-status health metrics.
+status health metrics, time-prefix filtering and malformed-field rejection.
 
 ## License
 

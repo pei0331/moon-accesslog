@@ -11,6 +11,7 @@ fn main {
   let mut status_min : Int? = None
   let mut status_max : Int? = None
   let mut max_error_rate : Int? = None
+  let mut hour_prefix : String? = None
   let mut i = 1
   while i < args.length() {
     if args[i] == "--top" {
@@ -79,6 +80,12 @@ fn main {
       }
       max_error_rate = Some(value)
       i += 2
+    } else if args[i] == "--hour-prefix" {
+      if i + 1 >= args.length() {
+        fail("missing UTC hour prefix after --hour-prefix")
+      }
+      hour_prefix = Some(args[i + 1])
+      i += 2
     } else if args[i] == "--help" || args[i] == "-h" {
       println("Usage: moon-accesslog [options] <access.log>")
       println("  --top N                 number of rows in text output")
@@ -89,6 +96,9 @@ fn main {
       println("  --status-min CODE       inclusive lower status bound")
       println("  --status-max CODE       inclusive upper status bound")
       println("  --max-error-rate N      fail when error percentage exceeds N")
+      println(
+        "  --hour-prefix PREFIX   keep timestamps under a UTC hour prefix",
+      )
       return
     } else if path is None {
       path = Some(args[i])
@@ -109,6 +119,7 @@ fn main {
       let options = @accesslog.AnalyzeOptions::from(
         http_method, path_prefix, address, status_min, status_max,
       )
+      let options = options.with_hour_prefix(hour_prefix)
       let report = @accesslog.analyze_with_options(source, options)
       if json {
         println(report.to_json())

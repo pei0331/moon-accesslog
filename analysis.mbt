@@ -6,6 +6,7 @@ pub struct AnalyzeOptions {
   address : String?
   status_min : Int?
   status_max : Int?
+  hour_prefix : String?
 }
 
 ///|
@@ -17,6 +18,7 @@ pub fn AnalyzeOptions::new() -> AnalyzeOptions {
     address: None,
     status_min: None,
     status_max: None,
+    hour_prefix: None,
   }
 }
 
@@ -29,7 +31,30 @@ pub fn AnalyzeOptions::from(
   status_min : Int?,
   status_max : Int?,
 ) -> AnalyzeOptions {
-  AnalyzeOptions::{ http_method, path_prefix, address, status_min, status_max }
+  AnalyzeOptions::{
+    http_method,
+    path_prefix,
+    address,
+    status_min,
+    status_max,
+    hour_prefix: None,
+  }
+}
+
+///|
+/// Restrict analysis to records whose timestamp starts with a UTC hour prefix.
+pub fn AnalyzeOptions::with_hour_prefix(
+  self : AnalyzeOptions,
+  hour_prefix : String?,
+) -> AnalyzeOptions {
+  AnalyzeOptions::{
+    http_method: self.http_method,
+    path_prefix: self.path_prefix,
+    address: self.address,
+    status_min: self.status_min,
+    status_max: self.status_max,
+    hour_prefix,
+  }
 }
 
 ///|
@@ -134,11 +159,16 @@ fn matches_options(options : AnalyzeOptions, record : AccessRecord) -> Bool {
     Some(value) => record.status <= value
     None => true
   }
+  let hour_matches = match options.hour_prefix {
+    Some(value) => record.timestamp.has_prefix(value)
+    None => true
+  }
   method_matches &&
   path_matches &&
   address_matches &&
   min_matches &&
-  max_matches
+  max_matches &&
+  hour_matches
 }
 
 ///|

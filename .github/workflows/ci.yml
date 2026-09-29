@@ -23,4 +23,5 @@ jobs:
       - run: moon run cmd/main -- examples/access.log
       - run: moon run cmd/main -- --status-min 400 --json examples/access.log
       - run: moon run cmd/main -- --max-error-rate 100 examples/access.log
+      - run: moon run cmd/main -- --hour-prefix 23/Sep/2026:09 --json examples/access.log
       - run: moon build --target native
