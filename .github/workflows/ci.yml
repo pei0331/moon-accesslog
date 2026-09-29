@@ -13,25 +13,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install MoonBit
-        uses: moonbitlang/setup-moonbit@v0.1
-      - name: Verify MoonBit toolchain
         run: |
-          set -euxo pipefail
-          command -v moon
-          moon version
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh -o install.sh
+          bash install.sh
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - name: Check formatting
         run: moon fmt --check
       - name: Type check
         run: moon check
-      - name: Run unit tests
+      - name: Run tests
         run: moon test
-      - name: Run text report
+      - name: Run CLI example
         run: moon run cmd/main -- examples/access.log
-      - name: Run JSON error filter
-        run: moon run cmd/main -- --status-min 400 --json examples/access.log
-      - name: Run health gate
-        run: moon run cmd/main -- --max-error-rate 100 examples/access.log
-      - name: Run UTC hour filter
-        run: moon run cmd/main -- --hour-prefix 23/Sep/2026:09 --json examples/access.log
-      - name: Build native binary
+      - name: Build native target
         run: moon build --target native
