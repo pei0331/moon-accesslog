@@ -4,6 +4,9 @@ fn main {
   let mut top = 10
   let mut json = false
   let mut csv = false
+  let mut prometheus = false
+  let mut markdown = false
+  let mut ndjson = false
   let mut path : String? = None
   let mut http_method : String? = None
   let mut path_prefix : String? = None
@@ -35,10 +38,28 @@ fn main {
       json = true
       i += 1
     } else if args[i] == "--csv" {
-      if json {
-        fail("--json and --csv cannot be combined")
+      if json || prometheus || markdown || ndjson {
+        fail("machine-readable output flags cannot be combined")
       }
       csv = true
+      i += 1
+    } else if args[i] == "--prometheus" {
+      if json || csv || markdown || ndjson {
+        fail("machine-readable output flags cannot be combined")
+      }
+      prometheus = true
+      i += 1
+    } else if args[i] == "--markdown" {
+      if json || csv || prometheus || ndjson {
+        fail("machine-readable output flags cannot be combined")
+      }
+      markdown = true
+      i += 1
+    } else if args[i] == "--ndjson" {
+      if json || csv || prometheus || markdown {
+        fail("machine-readable output flags cannot be combined")
+      }
+      ndjson = true
       i += 1
     } else if args[i] == "--method" {
       if i + 1 >= args.length() {
@@ -90,6 +111,9 @@ fn main {
       println("Usage: moon-accesslog [options] <access.log>")
       println("  --top N                 number of rows in text output")
       println("  --json | --csv          select machine-readable output")
+      println("  --prometheus            emit Prometheus exposition text")
+      println("  --markdown              emit Markdown report")
+      println("  --ndjson                emit one metric object per line")
       println("  --method METHOD         keep one HTTP method")
       println("  --path-prefix PREFIX    keep routes under a prefix")
       println("  --address ADDRESS       keep one client address")
@@ -125,6 +149,12 @@ fn main {
         println(report.to_json())
       } else if csv {
         println(report.to_csv())
+      } else if prometheus {
+        println(report.to_prometheus("moon_accesslog"))
+      } else if markdown {
+        println(report.to_markdown(top~))
+      } else if ndjson {
+        println(report.to_ndjson())
       } else {
         println(report.to_text(top~))
       }

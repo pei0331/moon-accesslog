@@ -47,35 +47,95 @@ pub fn Analyzer::finish(Self) -> Report
 pub fn Analyzer::new(AnalyzeOptions) -> Self
 pub fn Analyzer::push(Self, String) -> Self
 
+pub struct EndpointSummary {
+  route : String
+  requests : Int
+  errors : Int
+  total_bytes : Int
+  error_rate_percent : Int
+  average_bytes : Int
+  depth : Int
+}
+
+pub struct MetricFinding {
+  code : String
+  severity : String
+  message : String
+  value : Int
+}
+
 pub struct Report {
   mut total_lines : Int
   mut invalid_lines : Int
   mut filtered_lines : Int
   mut requests : Int
   mut total_bytes : Int
+  mut query_requests : Int
   status_counts : Map[Int, Int]
   method_counts : Map[String, Int]
   path_counts : Map[String, Int]
   address_counts : Map[String, Int]
   hourly_counts : Map[String, Int]
   route_counts : Map[String, Int]
+  user_agent_counts : Map[String, Int]
+  referrer_counts : Map[String, Int]
+  query_key_counts : Map[String, Int]
+  protocol_counts : Map[String, Int]
+  route_error_counts : Map[String, Int]
+  route_bytes_counts : Map[String, Int]
 }
+pub fn Report::average_bytes(Self) -> Int
 pub fn Report::client_error_requests(Self) -> Int
+pub fn Report::endpoint_summaries(Self, Int) -> Array[EndpointSummary]
 pub fn Report::error_rate_percent(Self) -> Int
 pub fn Report::error_requests(Self) -> Int
+pub fn Report::findings(Self) -> Array[MetricFinding]
+pub fn Report::invalid_rate_percent(Self) -> Int
 pub fn Report::is_healthy(Self, Int) -> Bool
+pub fn Report::largest_routes(Self, Int) -> Array[(String, Int)]
 pub fn Report::merge(Self, Self) -> Self
+pub fn Report::query_request_percent(Self) -> Int
+pub fn Report::request_class_counts(Self) -> Map[String, Int]
+pub fn Report::route_depth_counts(Self) -> Map[Int, Int]
+pub fn Report::route_depth_percent(Self, Int) -> Int
 pub fn Report::server_error_requests(Self) -> Int
+pub fn Report::slo_snapshot(Self) -> SloSnapshot
 pub fn Report::status_class_counts(Self) -> Map[String, Int]
+pub fn Report::status_class_percent(Self, String) -> Int
 pub fn Report::success_rate_percent(Self) -> Int
 pub fn Report::success_requests(Self) -> Int
 pub fn Report::to_csv(Self) -> String
+pub fn Report::to_env(Self, String) -> String
 pub fn Report::to_json(Self) -> String
+pub fn Report::to_markdown(Self, top? : Int) -> String
+pub fn Report::to_ndjson(Self) -> String
+pub fn Report::to_prometheus(Self, String) -> String
+pub fn Report::to_summary_json(Self) -> String
 pub fn Report::to_text(Self, top? : Int) -> String
 pub fn Report::top_addresses(Self, Int) -> Array[(String, Int)]
+pub fn Report::top_error_routes(Self, Int) -> Array[(String, Int)]
 pub fn Report::top_paths(Self, Int) -> Array[(String, Int)]
+pub fn Report::top_protocols(Self, Int) -> Array[(String, Int)]
+pub fn Report::top_query_keys(Self, Int) -> Array[(String, Int)]
+pub fn Report::top_referrers(Self, Int) -> Array[(String, Int)]
 pub fn Report::top_routes(Self, Int) -> Array[(String, Int)]
+pub fn Report::top_user_agents(Self, Int) -> Array[(String, Int)]
+pub fn Report::unhealthy_route_count(Self, Int) -> Int
 pub fn Report::unique_path_count(Self) -> Int
+pub fn Report::unique_protocol_count(Self) -> Int
+pub fn Report::unique_query_key_count(Self) -> Int
+pub fn Report::unique_referrer_count(Self) -> Int
+pub fn Report::unique_user_agent_count(Self) -> Int
+pub fn Report::within_budgets(Self, Int, Int) -> Bool
+
+pub struct SloSnapshot {
+  availability_percent : Int
+  error_budget_percent : Int
+  invalid_input_percent : Int
+  query_request_percent : Int
+  total_requests : Int
+  server_errors : Int
+}
 
 // Type aliases
 

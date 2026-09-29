@@ -256,3 +256,86 @@ test "reject invalid status bytes and protocol" {
     is None,
   )
 }
+
+///|
+test "collect observability dimensions" {
+  let report = analyze(
+    "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /search?q=moon&sort=new HTTP/1.1\" 200 10 \"https://example.test\" \"Mozilla/5.0\"\n127.0.0.2 - - [10/Oct/2000:13:56:36 +0000] \"POST /search?q=bit HTTP/2\" 500 20 \"-\" \"curl/8\"",
+  )
+  assert_eq(report.query_requests, 2)
+  assert_eq(report.query_request_percent(), 100)
+  assert_eq(report.query_key_counts.get("q"), Some(2))
+  assert_eq(report.query_key_counts.get("sort"), Some(1))
+  assert_eq(report.user_agent_counts.get("Mozilla/5.0"), Some(1))
+  assert_eq(report.protocol_counts.get("HTTP/2"), Some(1))
+  assert_eq(report.average_bytes(), 15)
+}
+
+///|
+test "endpoint summaries retain route bytes and errors" {
+  let report = analyze(
+    "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /api/items HTTP/1.1\" 200 10\n127.0.0.1 - - [10/Oct/2000:13:56:36 +0000] \"GET /api/items HTTP/1.1\" 500 30\n127.0.0.1 - - [10/Oct/2000:13:57:36 +0000] \"GET /health HTTP/1.1\" 200 5",
+  )
+  let summaries = report.endpoint_summaries(2)
+  assert_eq(summaries[0].route, "/api/items")
+  assert_eq(summaries[0].requests, 2)
+  assert_eq(summaries[0].errors, 1)
+  assert_eq(summaries[0].total_bytes, 40)
+  assert_eq(summaries[0].error_rate_percent, 50)
+  assert_eq(summaries[0].depth, 2)
+}
+
+///|
+test "findings identify server errors and malformed input" {
+  let report = analyze(
+    "bad line\n127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /a HTTP/1.1\" 500 1",
+  )
+  let findings = report.findings()
+  assert_true(findings.length() >= 2)
+  assert_eq(findings[0].code, "HIGH_ERROR_RATE")
+  assert_true(
+    report.to_prometheus("web.api").contains("web_api_requests_total 1"),
+  )
+  assert_true(report.to_markdown().contains("# Access log report"))
+  assert_true(report.to_ndjson().contains("\"type\":\"status\""))
+}
+
+///|
+test "request class and route depth metrics are stable" {
+  let report = analyze(
+    "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET / HTTP/1.1\" 200 1\n127.0.0.1 - - [10/Oct/2000:13:56:36 +0000] \"GET /a/b HTTP/1.1\" 302 1\n127.0.0.1 - - [10/Oct/2000:13:57:36 +0000] \"GET /a/b HTTP/1.1\" 404 1",
+  )
+  assert_eq(report.request_class_counts().get("success"), Some(1))
+  assert_eq(report.request_class_counts().get("redirect"), Some(1))
+  assert_eq(report.request_class_counts().get("client_error"), Some(1))
+  assert_eq(report.route_depth_counts().get(0), Some(1))
+  assert_eq(report.route_depth_counts().get(2), Some(2))
+  assert_eq(report.status_class_percent("4xx"), 33)
+}
+
+///|
+test "service objectives and route budgets are deterministic" {
+  let report = analyze(
+    "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /a HTTP/1.1\" 200 10\n127.0.0.1 - - [10/Oct/2000:13:56:36 +0000] \"GET /a HTTP/1.1\" 500 20\n127.0.0.1 - - [10/Oct/2000:13:57:36 +0000] \"GET /b HTTP/1.1\" 404 30",
+  )
+  let snapshot = report.slo_snapshot()
+  assert_eq(snapshot.total_requests, 3)
+  assert_eq(snapshot.server_errors, 1)
+  assert_eq(snapshot.availability_percent, 33)
+  assert_true(!report.within_budgets(30, 0))
+  assert_eq(report.unhealthy_route_count(20), 2)
+  assert_eq(report.top_error_routes(1)[0], ("/a", 1))
+  assert_eq(report.largest_routes(1)[0], ("/a", 30))
+}
+
+///|
+test "operational exports expose stable top-level metrics" {
+  let report = analyze(
+    "127.0.0.1 - - [10/Oct/2000:13:55:36 +0000] \"GET /a HTTP/1.1\" 200 10",
+  )
+  assert_true(report.to_env("web.api").contains("WEB_API_REQUESTS=1"))
+  assert_true(report.to_summary_json().contains("\"unique_routes\":1"))
+  assert_eq(report.unique_user_agent_count(), 1)
+  assert_eq(report.unique_referrer_count(), 1)
+  assert_eq(report.unique_protocol_count(), 1)
+}

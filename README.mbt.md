@@ -17,6 +17,9 @@ moon run cmd/main -- --method GET --path-prefix /api examples/access.log
 moon run cmd/main -- --status-min 400 --status-max 599 --json examples/access.log
 moon run cmd/main -- --max-error-rate 5 examples/access.log
 moon run cmd/main -- --hour-prefix 23/Sep/2026:09 examples/access.log
+moon run cmd/main -- --prometheus examples/access.log
+moon run cmd/main -- --markdown --top 5 examples/access.log
+moon run cmd/main -- --ndjson examples/access.log
 ```
 
 Malformed records are counted and skipped, while valid lines still contribute
@@ -79,6 +82,13 @@ status-class counts, success/client-error/server-error metrics, and structured
 `analyze_lines` support incremental or pre-split input for callers that do not
 want to assemble one large source string.
 
+Reports also aggregate User-Agent, referrer, protocol and query parameter names.
+Operational APIs include `slo_snapshot()`, `findings()`, `endpoint_summaries()`,
+`top_error_routes()`, `largest_routes()` and `within_budgets(...)`. Exporters
+cover Prometheus text exposition (`to_prometheus`), Markdown (`to_markdown`),
+line-oriented NDJSON (`to_ndjson`), environment key/value snapshots (`to_env`)
+and compact health JSON (`to_summary_json`).
+
 ## Development
 
 ```bash
@@ -89,12 +99,14 @@ moon test
 moon run cmd/main -- examples/access.log
 moon run cmd/main -- --json examples/access.log
 moon run cmd/main -- --status-min 400 examples/access.log
+moon run cmd/main -- --prometheus examples/access.log
 moon build --target native
 ```
 
 The test suite covers malformed records, quoted fields, query/route handling,
 filter accounting, deterministic output ordering, incremental analysis and
-status health metrics, time-prefix filtering and malformed-field rejection.
+status health metrics, time-prefix filtering, malformed-field rejection and
+operational exporter output.
 
 ## License
 

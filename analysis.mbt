@@ -128,12 +128,19 @@ fn empty_report() -> Report {
     filtered_lines: 0,
     requests: 0,
     total_bytes: 0,
+    query_requests: 0,
     status_counts: Map([]),
     method_counts: Map([]),
     path_counts: Map([]),
     address_counts: Map([]),
     hourly_counts: Map([]),
     route_counts: Map([]),
+    user_agent_counts: Map([]),
+    referrer_counts: Map([]),
+    query_key_counts: Map([]),
+    protocol_counts: Map([]),
+    route_error_counts: Map([]),
+    route_bytes_counts: Map([]),
   }
 }
 
@@ -175,11 +182,24 @@ fn matches_options(options : AnalyzeOptions, record : AccessRecord) -> Bool {
 fn add_record(report : Report, record : AccessRecord) -> Report {
   report.requests += 1
   report.total_bytes += record.bytes
+  if record.query != "" {
+    report.query_requests += 1
+  }
   increment(report.status_counts, record.status)
   increment(report.method_counts, record.http_method)
   increment(report.path_counts, record.path)
   increment(report.route_counts, record.route)
+  increment_by(report.route_bytes_counts, record.route, record.bytes)
+  if record.status >= 400 {
+    increment(report.route_error_counts, record.route)
+  }
   increment(report.address_counts, record.address)
+  increment(report.user_agent_counts, record.user_agent)
+  increment(report.referrer_counts, record.referrer)
+  increment(report.protocol_counts, record.protocol)
+  for key in query_keys(record.query) {
+    increment(report.query_key_counts, key)
+  }
   let hour = hour_bucket(record.timestamp)
   if hour != "" {
     increment(report.hourly_counts, hour)
@@ -247,12 +267,19 @@ pub fn Report::merge(self : Report, other : Report) -> Report {
   self.filtered_lines += other.filtered_lines
   self.requests += other.requests
   self.total_bytes += other.total_bytes
+  self.query_requests += other.query_requests
   merge_int_counts(self.status_counts, other.status_counts)
   merge_string_counts(self.method_counts, other.method_counts)
   merge_string_counts(self.path_counts, other.path_counts)
   merge_string_counts(self.route_counts, other.route_counts)
   merge_string_counts(self.address_counts, other.address_counts)
   merge_string_counts(self.hourly_counts, other.hourly_counts)
+  merge_string_counts(self.user_agent_counts, other.user_agent_counts)
+  merge_string_counts(self.referrer_counts, other.referrer_counts)
+  merge_string_counts(self.query_key_counts, other.query_key_counts)
+  merge_string_counts(self.protocol_counts, other.protocol_counts)
+  merge_string_counts(self.route_error_counts, other.route_error_counts)
+  merge_string_counts(self.route_bytes_counts, other.route_bytes_counts)
   self
 }
 

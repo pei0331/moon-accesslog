@@ -1,9 +1,14 @@
 # Changelog
 
-## 0.3.0 - Unreleased
+## 0.4.0 - Unreleased
 
 ### Added
 
+- Add User-Agent, referrer, protocol and query-key dimensions.
+- Add SLO snapshots, route budgets, findings, endpoint summaries and route size
+  rankings for operational dashboards.
+- Add Prometheus, Markdown, NDJSON, environment and compact JSON exporters.
+- Add CLI `--prometheus`, `--markdown` and `--ndjson` output modes.
 - Add strict delimiter validation and whitespace-tolerant request parsing.
 - Add `Report::merge`, `Report::is_healthy` and CLI `--max-error-rate` for
   parallel aggregation and CI quality gates.

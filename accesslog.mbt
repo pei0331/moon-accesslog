@@ -22,12 +22,19 @@ pub struct Report {
   mut filtered_lines : Int
   mut requests : Int
   mut total_bytes : Int
+  mut query_requests : Int
   status_counts : Map[Int, Int]
   method_counts : Map[String, Int]
   path_counts : Map[String, Int]
   address_counts : Map[String, Int]
   hourly_counts : Map[String, Int]
   route_counts : Map[String, Int]
+  user_agent_counts : Map[String, Int]
+  referrer_counts : Map[String, Int]
+  query_key_counts : Map[String, Int]
+  protocol_counts : Map[String, Int]
+  route_error_counts : Map[String, Int]
+  route_bytes_counts : Map[String, Int]
 }
 
 ///|
@@ -99,6 +106,8 @@ pub fn Report::to_text(self : Report, top? : Int = 10) -> String {
     "Lines: \{self.total_lines} (valid: \{self.requests}, invalid: \{self.invalid_lines}, filtered: \{self.filtered_lines})\n"
   out = out + "Transferred bytes: \{self.total_bytes}\n"
   out = out +
+    "Requests with query: \{self.query_requests} (\{self.query_request_percent()}%)\n"
+  out = out +
     "Error requests: \{self.error_requests()} (\{self.error_rate_percent()}%)\n"
   out = out +
     "Success requests: \{self.success_requests()} (\{self.success_rate_percent()}%)\n"
@@ -115,6 +124,10 @@ pub fn Report::to_text(self : Report, top? : Int = 10) -> String {
   out = out + render_string_counts(self.route_counts, limit)
   out = out + "\nTop client addresses\n"
   out = out + render_string_counts(self.address_counts, limit)
+  out = out + "\nTop user agents\n"
+  out = out + render_string_counts(self.user_agent_counts, limit)
+  out = out + "\nTop referrers\n"
+  out = out + render_string_counts(self.referrer_counts, limit)
   out = out + "\nRequests by UTC hour\n"
   out = out + render_string_counts(self.hourly_counts, 24)
   out
@@ -123,7 +136,7 @@ pub fn Report::to_text(self : Report, top? : Int = 10) -> String {
 ///|
 /// Render the report as deterministic JSON for archival and CI pipelines.
 pub fn Report::to_json(self : Report) -> String {
-  let mut out = "{\"total_lines\":\{self.total_lines},\"invalid_lines\":\{self.invalid_lines},\"filtered_lines\":\{self.filtered_lines},\"requests\":\{self.requests},\"total_bytes\":\{self.total_bytes},\"error_requests\":\{self.error_requests()},\"error_rate_percent\":\{self.error_rate_percent()},\"success_requests\":\{self.success_requests()},\"success_rate_percent\":\{self.success_rate_percent()},\"client_error_requests\":\{self.client_error_requests()},\"server_error_requests\":\{self.server_error_requests()},\"unique_paths\":\{self.unique_path_count()}"
+  let mut out = "{\"total_lines\":\{self.total_lines},\"invalid_lines\":\{self.invalid_lines},\"filtered_lines\":\{self.filtered_lines},\"requests\":\{self.requests},\"query_requests\":\{self.query_requests},\"total_bytes\":\{self.total_bytes},\"error_requests\":\{self.error_requests()},\"error_rate_percent\":\{self.error_rate_percent()},\"success_requests\":\{self.success_requests()},\"success_rate_percent\":\{self.success_rate_percent()},\"client_error_requests\":\{self.client_error_requests()},\"server_error_requests\":\{self.server_error_requests()},\"unique_paths\":\{self.unique_path_count()}"
   out = out + ",\"status_counts\":" + render_json_int_counts(self.status_counts)
   out = out +
     ",\"method_counts\":" +
@@ -141,6 +154,18 @@ pub fn Report::to_json(self : Report) -> String {
   out = out +
     ",\"hourly_counts\":" +
     render_json_string_counts(self.hourly_counts)
+  out = out +
+    ",\"user_agent_counts\":" +
+    render_json_string_counts(self.user_agent_counts)
+  out = out +
+    ",\"referrer_counts\":" +
+    render_json_string_counts(self.referrer_counts)
+  out = out +
+    ",\"query_key_counts\":" +
+    render_json_string_counts(self.query_key_counts)
+  out = out +
+    ",\"protocol_counts\":" +
+    render_json_string_counts(self.protocol_counts)
   out + "}"
 }
 
@@ -153,6 +178,7 @@ pub fn Report::to_csv(self : Report) -> String {
   out = out + "summary,filtered_lines,\{self.filtered_lines}\n"
   out = out + "summary,requests,\{self.requests}\n"
   out = out + "summary,total_bytes,\{self.total_bytes}\n"
+  out = out + "summary,query_requests,\{self.query_requests}\n"
   out = out + "summary,error_requests,\{self.error_requests()}\n"
   out = out + "summary,error_rate_percent,\{self.error_rate_percent()}\n"
   out = out + "summary,success_requests,\{self.success_requests()}\n"
@@ -167,6 +193,12 @@ pub fn Report::to_csv(self : Report) -> String {
   out = out + render_csv_string_counts("path", self.path_counts)
   out = out + render_csv_string_counts("route", self.route_counts)
   out = out + render_csv_string_counts("address", self.address_counts)
+  out = out + render_csv_string_counts("user_agent", self.user_agent_counts)
+  out = out + render_csv_string_counts("referrer", self.referrer_counts)
+  out = out + render_csv_string_counts("query_key", self.query_key_counts)
+  out = out + render_csv_string_counts("protocol", self.protocol_counts)
+  out = out + render_csv_string_counts("route_error", self.route_error_counts)
+  out = out + render_csv_string_counts("route_bytes", self.route_bytes_counts)
   out + render_csv_string_counts("utc_hour", self.hourly_counts)
 }
 
@@ -331,6 +363,20 @@ fn[K : Eq + Hash] increment(counts : Map[K, Int], key : K) -> Unit {
     None => 0
   }
   counts[key] = current + 1
+}
+
+///|
+/// Add an arbitrary amount to a grouped integer counter.
+fn[K : Eq + Hash] increment_by(
+  counts : Map[K, Int],
+  key : K,
+  amount : Int,
+) -> Unit {
+  let current = match counts.get(key) {
+    Some(value) => value
+    None => 0
+  }
+  counts[key] = current + amount
 }
 
 ///|
