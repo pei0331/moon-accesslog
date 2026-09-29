@@ -13,13 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install MoonBit
+        uses: moonbitlang/setup-moonbit@v0.1
+      - name: Verify MoonBit toolchain
         run: |
           set -euxo pipefail
-          curl --fail --location --retry 5 --retry-delay 2 --retry-all-errors \
-            https://cli.moonbitlang.com/install/unix.sh -o install.sh
-          bash ./install.sh
-          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
-          export PATH="$HOME/.moon/bin:$PATH"
           command -v moon
           moon version
       - name: Check formatting
