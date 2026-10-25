@@ -6,6 +6,21 @@ turns a large log into a compact operational summary: requests, transferred
 bytes, status and method counts, top paths, client addresses, and UTC-hour
 traffic.
 
+## Install
+
+The module is published on [mooncakes.io](https://mooncakes.io/docs/xiaoxiao1211/moon-accesslog):
+
+```bash
+moon add xiaoxiao1211/moon-accesslog
+```
+
+Add the package to a `moon.pkg` file with the `@accesslog` alias:
+
+```toml
+import {
+  "xiaoxiao1211/moon-accesslog" @accesslog,
+}
+```
 ## Quick start
 
 ```bash

@@ -1,6 +1,13 @@
 # Changelog
 
-## 0.4.0 - Unreleased
+## 0.4.1 - 2026-10-25
+
+### Changed
+
+- Publish the module on mooncakes.io as `xiaoxiao1211/moon-accesslog` and
+  document registry installation.
+
+## 0.4.0 - 2026-10-25
 
 ### Added
 
