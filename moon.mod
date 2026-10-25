@@ -1,4 +1,4 @@
-name = "xiaoxiao1211/moon-accesslog"
+name = "pei0331/moon-accesslog"
 
 version = "0.4.1"
 

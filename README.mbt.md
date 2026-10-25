@@ -8,17 +8,17 @@ traffic.
 
 ## Install
 
-The module is published on [mooncakes.io](https://mooncakes.io/docs/xiaoxiao1211/moon-accesslog):
+The module is published on [mooncakes.io](https://mooncakes.io/docs/pei0331/moon-accesslog):
 
 ```bash
-moon add xiaoxiao1211/moon-accesslog
+moon add pei0331/moon-accesslog
 ```
 
 Add the package to a `moon.pkg` file with the `@accesslog` alias:
 
 ```toml
 import {
-  "xiaoxiao1211/moon-accesslog" @accesslog,
+  "pei0331/moon-accesslog" @accesslog,
 }
 ```
 ## Quick start

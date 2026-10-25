@@ -4,7 +4,7 @@
 
 ### Changed
 
-- Publish the module on mooncakes.io as `xiaoxiao1211/moon-accesslog` and
+- Publish the module on mooncakes.io as `pei0331/moon-accesslog` and
   document registry installation.
 
 ## 0.4.0 - 2026-10-25

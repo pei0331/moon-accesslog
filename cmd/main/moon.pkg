@@ -2,7 +2,7 @@ import {
   "moonbitlang/core/env",
   "moonbitlang/core/string",
   "moonbitlang/core/encoding/utf8",
-  "xiaoxiao1211/moon-accesslog" @accesslog,
+  "pei0331/moon-accesslog" @accesslog,
 }
 
 pkgtype(kind: "executable")
